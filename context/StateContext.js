@@ -6,11 +6,14 @@ const Context = createContext();
 export const StateContext = ({ children }) => {
   const [showCart, setShowCart] = useState(false);
   const [cartItems, setCartItems] = useState([]);
-  const [totalPrice, setTotalPrice] = useState();
+  const [totalPrice, setTotalPrice] = useState(0);
   const [totalQuantities, setTotalQuantities] = useState(0);
   const [qty, setQty] = useState(1);
 
-  // logic for Add to Cart button
+  let foundProduct; // product that we want to update
+  let index; // index that we want to update
+
+  // function for Add to Cart button
   const onAdd = (product, quantity) => {
     const checkProductInCart = cartItems.find(
       (item) => item._id === product._id
@@ -41,12 +44,61 @@ export const StateContext = ({ children }) => {
     toast.success(`${qty} ${product.name} added to the cart.`);
   };
 
-  // logic for increase quantity button
+  // function for remove button in cart
+  const onRemove = (product) => {
+    // get product and it's index
+    foundProduct = cartItems.find((item) => item._id === product._id);
+    // update cart itmes, make sure it's not mutated
+    const newCartItems = cartItems.filter((item) => item._id !== product._id);
+
+    setTotalPrice(
+      (prevTotalPrice) =>
+        prevTotalPrice - foundProduct.price * foundProduct.quantity
+    );
+    setTotalQuantities(
+      (prevTotalQuantities) => prevTotalQuantities - foundProduct.quantity
+    );
+    setCartItems(newCartItems);
+  };
+
+  // function for inc/decrease quantity button in cart
+  const toggleCartItemQuantity = (id, value) => {
+    // get product and it's index
+    foundProduct = cartItems.find((item) => item._id === id);
+    index = cartItems.findIndex((product) => product._id === id);
+    // update cart itmes, make sure it's not mutated
+    const newCartItems = cartItems.filter((item) => item._id !== id);
+
+    // increase button
+    if (value === "inc") {
+      newCartItems.splice(index, 0, {
+        ...foundProduct,
+        quantity: foundProduct.quantity + 1,
+      });
+      setCartItems(newCartItems);
+      setTotalPrice((prevTotalPrice) => prevTotalPrice + foundProduct.price);
+      setTotalQuantities((prevTotalQuantities) => prevTotalQuantities + 1);
+    }
+    // decrease button
+    else if (value === "dec") {
+      if (foundProduct.quantity > 1) {
+        newCartItems.splice(index, 0, {
+          ...foundProduct,
+          quantity: foundProduct.quantity - 1,
+        });
+        setCartItems(newCartItems);
+        setTotalPrice((prevTotalPrice) => prevTotalPrice - foundProduct.price);
+        setTotalQuantities((prevTotalQuantities) => prevTotalQuantities - 1);
+      }
+    }
+  };
+
+  // function for increase quantity button
   const incQty = () => {
     setQty((prevQty) => prevQty + 1);
   };
 
-  // logic for decrerase quantity button
+  // function for decrerase quantity button
   const decQty = () => {
     setQty((prevQty) => {
       // make sure it gose not below 1
@@ -67,6 +119,8 @@ export const StateContext = ({ children }) => {
         incQty,
         decQty,
         onAdd,
+        onRemove,
+        toggleCartItemQuantity,
       }}
     >
       {children}
